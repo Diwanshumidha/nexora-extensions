@@ -1,7 +1,7 @@
 # Nexora extensions
 
 The extension SDK and the first-party extensions for
-[Nexora](../nexora), a plugin-based personal AI assistant. Each extension is a
+[Nexora](https://github.com/Diwanshumidha/nexora), a plugin-based personal AI assistant. Each extension is a
 TypeScript class built on `@nexora/extension-sdk`, bundled into a single file
 and run by Nexora in its own sandboxed Node.js process.
 
