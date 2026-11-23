@@ -1,0 +1,30 @@
+{
+  "id": "web",
+  "name": "Web",
+  "version": "0.1.0",
+  "protocol": 1,
+  "description": "Fetch public web pages and APIs: read a page as text, get JSON, or post to an API. Local and private network addresses are always blocked.",
+  "icon": "globe",
+  "namespace": "web",
+  "runtime": "node",
+  "main": "dist/index.js",
+  "permissions": {
+    "network": true
+  },
+  "settings": [
+    {
+      "key": "allowedSites",
+      "type": "string",
+      "label": "Allowed sites",
+      "default": "",
+      "description": "Comma-separated domains (e.g. github.com, api.example.com). Subdomains are included. Empty allows any public site."
+    },
+    {
+      "key": "maxKB",
+      "type": "number",
+      "label": "Max response size (KB)",
+      "default": 1024,
+      "description": "Larger responses are cut off."
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "csv",
+  "name": "CSV",
+  "version": "0.1.0",
+  "protocol": 1,
+  "description": "Read, filter, sort, group and summarise CSV/TSV data, and write new CSV files, inside the folders you trust.",
+  "icon": "table",
+  "namespace": "csv",
+  "runtime": "node",
+  "main": "dist/index.js",
+  "permissions": {},
+  "settings": [
+    {
+      "key": "folders",
+      "type": "folders",
+      "label": "Trusted folders",
+      "grant": "readwrite",
+      "description": "CSV can read and write data files only inside these folders."
+    },
+    {
+      "key": "maxRows",
+      "type": "number",
+      "label": "Max rows loaded",
+      "default": 200000,
+      "description": "Larger files are cut off at this many rows."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "nexora-extensions",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.24.0",
+  "scripts": {
+    "build:sdk": "pnpm --filter @nexora/extension-sdk build",
+    "build": "pnpm build:sdk && pnpm --filter \"./extensions/*\" build",
+    "release": "pnpm build && node scripts/release.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "fflate": "^0.8.2"
+  }
+}

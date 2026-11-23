@@ -1,0 +1,28 @@
+{
+  "id": "excel",
+  "name": "Excel",
+  "version": "0.1.0",
+  "protocol": 1,
+  "description": "Read and write Excel workbooks (.xlsx)",
+  "icon": "table",
+  "namespace": "excel",
+  "runtime": "node",
+  "main": "dist/index.js",
+  "permissions": {},
+  "settings": [
+    {
+      "key": "folders",
+      "type": "folders",
+      "label": "Trusted folders",
+      "grant": "readwrite",
+      "description": "Excel can open and edit workbooks only inside these folders."
+    },
+    {
+      "key": "maxRows",
+      "type": "number",
+      "label": "Max rows per read",
+      "default": 5000,
+      "description": "readSheet returns at most this many rows, to keep results small."
+    }
+  ]
+}

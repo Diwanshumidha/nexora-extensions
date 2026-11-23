@@ -1,0 +1,12 @@
+{
+  "id": "system",
+  "name": "System",
+  "version": "0.1.0",
+  "protocol": 1,
+  "description": "Read-only facts about this computer: OS, CPU, memory, uptime and load. No file or network access.",
+  "icon": "cpu",
+  "namespace": "system",
+  "runtime": "node",
+  "main": "dist/index.js",
+  "permissions": {}
+}

@@ -1,0 +1,28 @@
+{
+  "id": "archive",
+  "name": "Archive",
+  "version": "0.1.0",
+  "protocol": 1,
+  "description": "List, create and extract .zip archives inside the folders you trust. Blocks unsafe archives (paths escaping the folder, zip bombs).",
+  "icon": "archive",
+  "namespace": "archive",
+  "runtime": "node",
+  "main": "dist/index.js",
+  "permissions": {},
+  "settings": [
+    {
+      "key": "folders",
+      "type": "folders",
+      "label": "Trusted folders",
+      "grant": "readwrite",
+      "description": "Archive can read and write files only inside these folders."
+    },
+    {
+      "key": "maxExtractMB",
+      "type": "number",
+      "label": "Max extracted size (MB)",
+      "default": 1024,
+      "description": "Archives that would unpack to more than this are refused."
+    }
+  ]
+}

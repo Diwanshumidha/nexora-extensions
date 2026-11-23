@@ -1,0 +1,12 @@
+{
+  "id": "hello",
+  "name": "Hello",
+  "version": "0.1.0",
+  "protocol": 1,
+  "description": "Example extension showing the SDK basics",
+  "icon": "sparkles",
+  "namespace": "hello",
+  "runtime": "node",
+  "main": "dist/index.js",
+  "permissions": {}
+}

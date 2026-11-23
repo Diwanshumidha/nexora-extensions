@@ -1,0 +1,23 @@
+{
+  "name": "@nexora-ext/images",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ../../scripts/build-extension.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@jimp/core": "1.7.0",
+    "@jsquash/avif": "1.3.0",
+    "@jsquash/webp": "1.5.0",
+    "@nexora/extension-sdk": "workspace:*",
+    "exifr": "^7.1.3",
+    "heic-decode": "^2.1.0",
+    "jimp": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}

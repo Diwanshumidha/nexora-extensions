@@ -1,0 +1,35 @@
+{
+  "id": "images",
+  "name": "Images",
+  "version": "0.1.0",
+  "protocol": 1,
+  "description": "Convert images between JPEG, PNG, WebP, AVIF, GIF, BMP and TIFF (including from iPhone HEIC photos); inspect them (size, camera, date, location); resize, crop, rotate and adjust; make thumbnails; strip private metadata. Inside the folders you trust.",
+  "icon": "image",
+  "namespace": "images",
+  "runtime": "node",
+  "main": "dist/index.js",
+  "permissions": {},
+  "settings": [
+    {
+      "key": "folders",
+      "type": "folders",
+      "label": "Trusted folders",
+      "grant": "readwrite",
+      "description": "Images can read and write pictures only inside these folders. Originals are never replaced unless asked."
+    },
+    {
+      "key": "jpegQuality",
+      "type": "number",
+      "label": "JPEG quality",
+      "default": 85,
+      "description": "1-100. Used when saving JPEGs unless a call asks for something else."
+    },
+    {
+      "key": "showLocation",
+      "type": "boolean",
+      "label": "Reveal GPS location",
+      "default": false,
+      "description": "Include photo GPS coordinates in results. Off: the AI only learns that a photo has a location."
+    }
+  ]
+}

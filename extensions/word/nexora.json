@@ -1,0 +1,21 @@
+{
+  "id": "word",
+  "name": "Word",
+  "version": "0.1.0",
+  "protocol": 1,
+  "description": "Create Word documents (.docx)",
+  "icon": "document",
+  "namespace": "word",
+  "runtime": "node",
+  "main": "dist/index.js",
+  "permissions": {},
+  "settings": [
+    {
+      "key": "outputFolder",
+      "type": "folder",
+      "label": "Save folder",
+      "grant": "readwrite",
+      "description": "Word saves documents here. Relative file names are placed in this folder."
+    }
+  ]
+}

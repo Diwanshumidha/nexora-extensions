@@ -1,0 +1,6 @@
+packages:
+  - sdk/*
+  - extensions/*
+
+allowBuilds:
+  esbuild: true

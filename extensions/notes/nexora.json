@@ -1,0 +1,12 @@
+{
+  "id": "notes",
+  "name": "Notes",
+  "version": "0.1.0",
+  "protocol": 1,
+  "description": "Markdown notes the AI can create, search and update: a scratchpad and memory that stays on this machine.",
+  "icon": "note",
+  "namespace": "notes",
+  "runtime": "node",
+  "main": "dist/index.js",
+  "permissions": {}
+}

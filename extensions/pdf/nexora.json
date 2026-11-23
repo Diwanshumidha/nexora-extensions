@@ -1,0 +1,28 @@
+{
+  "id": "pdf",
+  "name": "PDF",
+  "version": "0.1.0",
+  "protocol": 1,
+  "description": "Read text from PDFs, page by page, see their details, and search across them, inside the folders you trust.",
+  "icon": "pdf",
+  "namespace": "pdf",
+  "runtime": "node",
+  "main": "dist/index.js",
+  "permissions": {},
+  "settings": [
+    {
+      "key": "folders",
+      "type": "folders",
+      "label": "Trusted folders",
+      "grant": "read",
+      "description": "PDF can read documents only inside these folders. It never changes files."
+    },
+    {
+      "key": "maxChars",
+      "type": "number",
+      "label": "Max characters per read",
+      "default": 100000,
+      "description": "Longer documents are returned in parts; ask for specific pages to read on."
+    }
+  ]
+}

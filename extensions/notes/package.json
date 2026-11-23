@@ -1,0 +1,17 @@
+{
+  "name": "@nexora-ext/notes",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ../../scripts/build-extension.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nexora/extension-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "files",
+  "name": "Files",
+  "version": "0.1.0",
+  "protocol": 1,
+  "description": "Browse, search, read, copy, move, rename and delete files inside the folders you trust. Deleted files go to a Nexora trash and can be restored.",
+  "icon": "folder",
+  "namespace": "files",
+  "runtime": "node",
+  "main": "dist/index.js",
+  "permissions": {},
+  "settings": [
+    {
+      "key": "folders",
+      "type": "folders",
+      "label": "Trusted folders",
+      "grant": "readwrite",
+      "description": "Files can only see and change things inside these folders."
+    },
+    {
+      "key": "maxReadKB",
+      "type": "number",
+      "label": "Max text read (KB)",
+      "default": 512,
+      "description": "readText returns at most this much of a file per call."
+    },
+    {
+      "key": "showHidden",
+      "type": "boolean",
+      "label": "Include hidden files",
+      "default": false,
+      "description": "List and search dotfiles such as .env or .git."
+    }
+  ]
+}
