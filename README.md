@@ -49,7 +49,7 @@ an **Update** button in the app's **+** panel and keep their settings and data.
 
 | Extension | Tools | Access |
 | --------- | ----- | ------ |
-| **Files** | `roots` `list` `info` `tree` `find` `readText` `size` `hash` (read) · `writeText` `appendText` `mkdir` `copy` `move` `rename` `delete` `restore` `emptyTrash` (write) · `listTrash` | Only its *Trusted folders*. Deletes and overwrites go to a Nexora trash (`restore` undoes them). Never overwrites unless asked, never touches a trusted folder's root. |
+| **Files** | `roots` `list` `info` `tree` `find` `readText` `size` `hash` (read) · `writeText` `appendText` `mkdir` `copy` `move` `rename` `delete` `restore` `emptyTrash` (write) · `listTrash` | Only its *Trusted folders*. Deletes and overwrites go to a Nexora trash (`restore` undoes them), kept 30 days and at most 2 GB by default (*Keep trash for*, *Max trash size*), then deleted for good. Never overwrites unless asked, never touches a trusted folder's root. |
 | **Web** | `get` `getJSON` `readPage` (read) · `post` (write) | Public sites only: localhost, LAN, tailnet (100.64/10), link-local and metadata addresses are refused, re-checked on every redirect. Optional *Allowed sites*. |
 | **Notes** | `list` `read` `search` (read) · `create` `append` `update` `delete` (write) | Its own private folder only. |
 | **PDF** | `info` `readText` (by page) `search` (across a folder) | Its *Trusted folders*, read-only. |

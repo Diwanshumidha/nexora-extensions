@@ -1,7 +1,7 @@
 {
   "id": "files",
   "name": "Files",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "protocol": 1,
   "description": "Browse, search, read, copy, move, rename and delete files inside the folders you trust. Deleted files go to a Nexora trash and can be restored.",
   "icon": "folder",
@@ -30,6 +30,20 @@
       "label": "Include hidden files",
       "default": false,
       "description": "List and search dotfiles such as .env or .git."
+    },
+    {
+      "key": "trashDays",
+      "type": "number",
+      "label": "Keep trash for (days)",
+      "default": 30,
+      "description": "Deleted and overwritten files are kept this long so they can be restored, then deleted for good. 0 keeps them until you empty the trash."
+    },
+    {
+      "key": "trashMaxMB",
+      "type": "number",
+      "label": "Max trash size (MB)",
+      "default": 2048,
+      "description": "When the trash grows past this, the oldest items are deleted for good, never the most recent one. 0 for no limit."
     }
   ]
 }

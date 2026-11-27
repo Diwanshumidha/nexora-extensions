@@ -9,6 +9,8 @@ interface FilesSettings {
   folders: string[];
   maxReadKB: number;
   showHidden: boolean;
+  trashDays: number;
+  trashMaxMB: number;
 }
 
 const path = s.string("Absolute path, or relative to the first trusted folder");
@@ -47,6 +49,9 @@ const DeleteInput = s.object({
   path,
   permanent: s.optional(s.boolean("Delete for good instead of moving to the trash. Default false")),
 });
+const EmptyTrashInput = s.object({
+  olderThanDays: s.optional(s.number("Only delete items trashed more than this many days ago (default: everything)")),
+});
 const RestoreInput = s.object({
   id: s.string("Trash entry id from listTrash"),
   to: s.optional(s.string("Where to restore (default: the original location)")),
@@ -61,6 +66,9 @@ const entry = s.object({
 });
 
 const SKIP_DIRS = new Set(["node_modules", ".git", ".cache", "__pycache__"]);
+const DAY_MS = 24 * 60 * 60 * 1000;
+const CLEAN_EVERY_MS = 60 * 60 * 1000; // trash cleanup, besides after each trashing
+const CLEAN_DELAY_MS = 5_000; // batches the cleanup after a burst of deletes
 const MAX_WALK = 50_000; // entries visited per search/size, to keep calls bounded
 
 interface TrashMeta {
@@ -70,9 +78,35 @@ interface TrashMeta {
   deletedAt: string;
   type: "file" | "dir" | "symlink" | "other";
   reason: "deleted" | "overwritten";
+  /** Bytes the item takes; missing in entries from before it was recorded. */
+  size?: number;
 }
 
 class Files extends Extension<FilesSettings> {
+  #cleanTimer?: NodeJS.Timeout;
+  #cleanSoon?: NodeJS.Timeout;
+  #cleaning: Promise<unknown> = Promise.resolve();
+
+  /* ---------------------------------------------------------- lifecycle */
+
+  // The trash cleans itself: items older than trashDays, then the oldest
+  // items while it is over trashMaxMB, are deleted for good. It runs at
+  // start (catching up on time the app was closed), hourly, and shortly
+  // after files are trashed.
+  protected override async onStart() {
+    await this.cleanTrash();
+    this.#cleanTimer = setInterval(() => void this.cleanTrash(), CLEAN_EVERY_MS);
+  }
+
+  protected override onStop() {
+    clearInterval(this.#cleanTimer);
+    clearTimeout(this.#cleanSoon);
+  }
+
+  protected override async onSettingsChanged(next: Readonly<FilesSettings>, prev: Readonly<FilesSettings>) {
+    if (next.trashDays !== prev.trashDays || next.trashMaxMB !== prev.trashMaxMB) await this.cleanTrash();
+  }
+
   /* ------------------------------------------------------------ reading */
 
   @tool({ description: "List the trusted folders Files can work in. Call this first to know where files can be found.", readOnly: true,
@@ -308,18 +342,22 @@ class Files extends Extension<FilesSettings> {
 
   /* -------------------------------------------------------------- trash */
 
-  @tool({ description: "List items in the Nexora trash (deleted or overwritten files), newest first.", readOnly: true,
-    output: s.array(s.object({ id: s.string(), name: s.string(), originalPath: s.string(), deletedAt: s.string(), reason: s.string() })) })
+  @tool({
+    description: "List items in the Nexora trash (deleted or overwritten files), newest first. " +
+      "Items are deleted for good after the number of days set in Files' settings, or sooner if the trash outgrows its size limit.",
+    readOnly: true,
+    output: s.array(s.object({
+      id: s.string(), name: s.string(), originalPath: s.string(), deletedAt: s.string(), reason: s.string(), size: s.number(),
+      expiresAt: s.optional(s.string("When it will be deleted for good (absent if kept until the trash is emptied)")),
+    })),
+  })
   async listTrash() {
-    const out: TrashMeta[] = [];
-    for (const id of await fs.readdir(this.trashDir()).catch(() => [] as string[])) {
-      try {
-        out.push(JSON.parse(await fs.readFile(join(this.trashDir(), id, "meta.json"), "utf8")));
-      } catch {
-        // incomplete entry: ignore
-      }
-    }
-    return out.sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+    const days = this.keepDays();
+    return (await this.trashEntries()).map((m) => ({
+      ...m,
+      size: m.size ?? 0,
+      expiresAt: days > 0 ? new Date(Date.parse(m.deletedAt) + days * DAY_MS).toISOString() : undefined,
+    }));
   }
 
   @tool({ description: "Restore an item from the trash to where it was (or to another path).", input: RestoreInput, output: entry })
@@ -337,11 +375,27 @@ class Files extends Extension<FilesSettings> {
     return describe(dest);
   }
 
-  @tool({ description: "Permanently delete everything in the Nexora trash.", output: s.object({ removed: s.number() }) })
-  async emptyTrash() {
+  @tool({
+    description: "Permanently delete items in the Nexora trash: everything, or only items trashed more than olderThanDays ago.",
+    input: EmptyTrashInput,
+    output: s.object({ removed: s.number(), freed: s.string(), kept: s.number() }),
+  })
+  async emptyTrash({ olderThanDays }: Infer<typeof EmptyTrashInput> = {}) {
+    if (olderThanDays !== undefined && !(olderThanDays >= 0)) throw new ToolError("olderThanDays must be 0 or more");
+    const cutoff = olderThanDays === undefined ? Infinity : Date.now() - olderThanDays * DAY_MS;
     const ids = await fs.readdir(this.trashDir()).catch(() => [] as string[]);
-    for (const id of ids) await fs.rm(join(this.trashDir(), id), { recursive: true, force: true });
-    return { removed: ids.length };
+    const entries = await this.trashEntries();
+    const byId = new Map(entries.map((e) => [e.id, e]));
+    let removed = 0, freed = 0;
+    for (const id of ids) {
+      const e = byId.get(id);
+      // Incomplete entries (no meta.json) go only when emptying everything.
+      if (e ? !(Date.parse(e.deletedAt) <= cutoff) : cutoff !== Infinity) continue;
+      freed += e?.size ?? 0;
+      await fs.rm(join(this.trashDir(), id), { recursive: true, force: true });
+      removed++;
+    }
+    return { removed, freed: human(freed), kept: ids.length - removed };
   }
 
   /* ------------------------------------------------------------ helpers */
@@ -401,11 +455,79 @@ class Files extends Extension<FilesSettings> {
     await fs.mkdir(dir, { recursive: true });
     const meta: TrashMeta = {
       id, name: basename(full), originalPath: full, deletedAt: new Date().toISOString(),
-      type: (await describe(full)).type, reason,
+      type: (await describe(full)).type, reason, size: await diskSize(full),
     };
     await moveAcross(full, join(dir, "item"));
     await fs.writeFile(join(dir, "meta.json"), JSON.stringify(meta, null, 2));
+    this.scheduleClean();
     return id;
+  }
+
+  /** Complete trash entries, newest first. */
+  private async trashEntries(): Promise<TrashMeta[]> {
+    const out: TrashMeta[] = [];
+    for (const id of await fs.readdir(this.trashDir()).catch(() => [] as string[])) {
+      try {
+        out.push(JSON.parse(await fs.readFile(join(this.trashDir(), id, "meta.json"), "utf8")));
+      } catch {
+        // incomplete entry: ignore
+      }
+    }
+    return out.sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+  }
+
+  /** Days to keep trashed items; 0 keeps them until the trash is emptied. */
+  private keepDays() {
+    const d = Number(this.settings.trashDays ?? 30);
+    return Number.isFinite(d) && d > 0 ? d : 0;
+  }
+
+  private scheduleClean() {
+    if (this.#cleanSoon) return;
+    this.#cleanSoon = setTimeout(() => {
+      this.#cleanSoon = undefined;
+      void this.cleanTrash();
+    }, CLEAN_DELAY_MS);
+  }
+
+  /** Applies trashDays and trashMaxMB. Runs one at a time; never throws. */
+  private cleanTrash(): Promise<unknown> {
+    this.#cleaning = this.#cleaning.then(() => this.cleanTrashNow()).catch((err) => {
+      this.log.warn(`trash cleanup failed: ${err}`);
+    });
+    return this.#cleaning;
+  }
+
+  private async cleanTrashNow() {
+    const entries = await this.trashEntries(); // newest first
+    if (!entries.length) return;
+    const drop = new Set<TrashMeta>();
+    const days = this.keepDays();
+    if (days > 0) {
+      const cutoff = Date.now() - days * DAY_MS;
+      for (const e of entries) if (Date.parse(e.deletedAt) < cutoff) drop.add(e);
+    }
+    const maxMB = Number(this.settings.trashMaxMB ?? 0);
+    if (Number.isFinite(maxMB) && maxMB > 0) {
+      for (const e of entries) {
+        if (e.size === undefined && !drop.has(e)) {
+          // Entries from before sizes were recorded: measure once.
+          e.size = await diskSize(join(this.trashDir(), e.id, "item")).catch(() => 0);
+          await fs.writeFile(join(this.trashDir(), e.id, "meta.json"), JSON.stringify(e, null, 2)).catch(() => {});
+        }
+      }
+      let total = entries.filter((e) => !drop.has(e)).reduce((n, e) => n + (e.size ?? 0), 0);
+      // Oldest first, but never the newest item, so what was just deleted
+      // can always be restored.
+      for (const e of entries.slice(1).reverse()) {
+        if (total <= maxMB * 1024 * 1024) break;
+        if (drop.has(e)) continue;
+        drop.add(e);
+        total -= e.size ?? 0;
+      }
+    }
+    for (const e of drop) await fs.rm(join(this.trashDir(), e.id), { recursive: true, force: true });
+    if (drop.size) this.log.info(`trash cleaned: ${drop.size} item(s) deleted for good`);
   }
 }
 
@@ -413,6 +535,15 @@ async function describe(full: string) {
   const st = await fs.lstat(full);
   const type = st.isSymbolicLink() ? "symlink" : st.isDirectory() ? "dir" : st.isFile() ? "file" : "other";
   return { name: basename(full), path: full, type, size: st.size, modified: st.mtime.toISOString() } as const;
+}
+
+/** Bytes a file or folder takes (recursive; symlinks count as themselves). */
+async function diskSize(full: string): Promise<number> {
+  const st = await fs.lstat(full);
+  if (!st.isDirectory()) return st.size;
+  let total = 0;
+  for (const name of await fs.readdir(full)) total += await diskSize(join(full, name));
+  return total;
 }
 
 async function exists(p: string) {
